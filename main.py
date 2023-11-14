@@ -7,6 +7,7 @@ import traceback
 import asyncio
 import aiohttp
 import random
+import logging
 from discord import app_commands
 from discord.ext import commands
 from discord.ext import tasks
@@ -43,6 +44,16 @@ class Color:
     REVERSE = "\033[7m"
     CONCEALED = "\033[8m"
 
+
+root = logging.getLogger() # logging
+root.setLevel(logging.DEBUG)
+
+handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+root.addHandler(handler)
+
 intents = discord.Intents.all()
 bot = commands.AutoShardedBot(intents=intents, command_prefix=commands.when_mentioned_or("infinity$"), help_command=None)
 tree = bot.tree
@@ -57,7 +68,6 @@ async def on_ready():
     mc = 0
     for g in gs:
         mc = mc + len(g.members)
-
     print(f"{Color.GREEN}[SUCCESS]{Color.CYAN} Logged in as {Color.BOLD}{bot.user.name}{Color.RESET}{Color.CYAN} at ID {Color.BOLD}{bot.user.id}{Color.RESET}{Color.CYAN}.\nIn {Color.BOLD}{gc}{Color.RESET}{Color.CYAN} guilds\nwith {Color.BOLD}{mc}{Color.RESET}{Color.CYAN} total members.\nShard count is {Color.BOLD}{bot.shard_count}{Color.RESET}{Color.CYAN}.\nInvite: https://discord.com/api/oauth2/authorize?client_id={bot.user.id}&permissions=8&scope=bot%20applications.commands{Color.RESET}")
     # bot is likely to get disconnected from gateway if it tries to make calls the second its connected
     uptime_ping.start()
@@ -254,28 +264,95 @@ async def joke(ctx: discord.Interaction):
             e = discord.Embed(title="Joke", description=joke)
             await ctx.followup.send(embed=e)
     
-class TriviaBtnTF(discord.ui.View):
+class TriviaBtn(discord.ui.View):
 
-    def __init__(self, ans: str, user: Union[discord.Member, discord.User]):
-        self.ans = ans
+    def __init__(self, answer: str, user: Union[discord.Member, discord.User], ans: list, timeout: float=None):
+        self.ans1 = ans[0]
+        self.ans2 = ans[1]
+        self.ans3 = ans[2]
+        self.ans4 = ans[3]
+        self.ans = answer
         self.user = user
         super().__init__()
         
 
-    @discord.ui.button(label="True", style=discord.ButtonStyle.green)
-    async def true(self, ctx: discord.Interaction, btn: discord.Button):
-        pass
+    @discord.ui.button(label="A", style=discord.ButtonStyle.green)
+    async def ans1btn(self, ctx: discord.Interaction, btn: discord.Button):
+        if self.ans1 != self.ans: # check if correct
+            e = discord.Embed(title="Incorrect Answer", description=f"{ctx.user.mention} got this question incorrect.", colour=discord.Colour.brand_red())
+            await ctx.response.edit_message(embed=e, view=None)
+            self.stop()
+        else:
+            e = discord.Embed(title="Correct Answer", description=f"{ctx.user.mention} got this question correct!", colour=discord.Colour.brand_green())
+            await ctx.response.edit_message(embed=e, view=None)
+            self.stop()
+
+    @discord.ui.button(label="B", style=discord.ButtonStyle.green)
+    async def ans2btn(self, ctx: discord.Interaction, btn: discord.Button):
+        if self.ans2 != self.ans:
+            e = discord.Embed(title="Incorrect Answer", description=f"{ctx.user.mention} got this question incorrect.", colour=discord.Colour.brand_red())
+            await ctx.response.edit_message(embed=e, view=None)
+            self.stop()
+        else:
+            e = discord.Embed(title="Correct Answer", description=f"{ctx.user.mention} got this question correct!", colour=discord.Colour.brand_green())
+            await ctx.response.edit_message(embed=e, view=None)
+            self.stop()
+    
+    @discord.ui.button(label="C", style=discord.ButtonStyle.green)
+    async def ans3btn(self, ctx: discord.Interaction, btn: discord.Button):
+        if self.ans3 != self.ans:
+            e = discord.Embed(title="Incorrect Answer", description=f"{ctx.user.mention} got this question incorrect.", colour=discord.Colour.brand_red())
+            await ctx.edit_original_response(embed=e, view=None)
+            self.stop()
+        else:
+            e = discord.Embed(title="Correct Answer", description=f"{ctx.user.mention} got this question correct!", colour=discord.Colour.brand_green())
+            await ctx.response.edit_message(embed=e, view=None)
+            self.stop()
+
+    @discord.ui.button(label="D", style=discord.ButtonStyle.green)
+    async def ans4btn(self, ctx: discord.Interaction, btn: discord.Button):
+        if self.ans4 != self.ans:
+            e = discord.Embed(title="Incorrect Answer", description=f"{ctx.user.mention} got this question incorrect.", colour=discord.Colour.brand_red())
+            await ctx.response.edit_message(embed=e, view=None)
+            self.stop()
+        else:
+            e = discord.Embed(title="Correct Answer", description=f"{ctx.user.mention} got this question correct!", colour=discord.Colour.brand_green())
+            await ctx.response.edit_message(embed=e, view=None)
+            self.stop()
 
     async def interaction_check(self, ctx: discord.Interaction):
-        if ctx.user.id != self.user.id:
+        if ctx.user.id != self.user.id: # check if user is the user that ran the command
             ctx.response.send_message("You do not have permission to interact with this.", ephemeral=True)
             return False
         return True
 
 @tree.command(name="trivia", description="Get a random trivia question.")
 @app_commands.checks.cooldown(1, 3)
-async def trivia(ctx: discord.Interaction, difficulty: Literal["Easy", "Medium", "Hard"], type: Literal["True/False", "Multiple Choice"]):
-    view = TriviaBtnTF()
+async def trivia(ctx: discord.Interaction, difficulty: Literal["Easy", "Medium", "Hard"]):
+    "Get a trivia question to answer."
+    difficulty = difficulty.lower()
+    async with aiohttp.ClientSession() as s:
+        async with s.get(f"https://opentdb.com/api.php?amount=1&difficulty={difficulty}&type=multiple") as resp: # start http session and make request to get question
+            json = await resp.json()
+    question = json["results"][0]["question"]
+    cans = json["results"][0]["correct_answer"]
+    answers: list = json["results"][0]["incorrect_answers"]
+    answers.append(cans) # list of all answers
+    random.shuffle(answers) # shuffle so the last one isnt always correct
+    abcdlist = f"```A. {answers[0]}\nB. {answers[1]}\nC. {answers[2]}\nD. {answers[3]}```"
+    e = discord.Embed(title="Trivia", description=f"{question}\n>>> {abcdlist}")
+    view = TriviaBtn(answer=cans, user=ctx.user, ans=answers) # create view obj
+    await ctx.response.send_message(embed=e, view=view)
+
+@tree.command(name="coinflip", description="Flip a coin for a 50/50 chance to win!")
+async def coinflip(ctx: discord.Interaction):
+    responses = [
+        "heads",
+        "tails"
+    ]
+    result = random.choice(responses) # choose between 2
+    e = discord.Embed(title="Coin Flip", description=f"And the result is...\n**{result}!**")
+    await ctx.response.send_message(embed=e)
 
 async def on_tree_error(ctx, error):
     if isinstance(error, app_commands.CommandOnCooldown):
@@ -317,4 +394,4 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
 bot.on_command_error = on_command_error
 
 
-bot.run(token)
+bot.run(token, log_handler=None)
