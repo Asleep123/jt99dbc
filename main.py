@@ -8,6 +8,7 @@ import asyncio
 import aiohttp
 import random
 import logging
+import html
 from discord import app_commands
 from discord.ext import commands
 from discord.ext import tasks
@@ -351,7 +352,23 @@ async def coinflip(ctx: discord.Interaction):
         "tails"
     ]
     result = random.choice(responses) # choose between 2
-    e = discord.Embed(title="Coin Flip", description=f"And the result is...\n**{result}!**")
+    e = discord.Embed(title="Coin Flip", description=f"And the result is...\n**{result}**!")
+    await ctx.response.send_message(embed=e)
+
+@tree.command(name="dice", description="Roll a dice!")
+async def dice(ctx: discord.Interaction):
+    num = random.randint(1, 6)
+    e = discord.Embed(title="Dice Roll", description=f"The dice landed on...\n**{num}**!")
+    await ctx.response.send_message(embed=e)
+
+@tree.command(name="affirmation", description="Get a random affirmation.")
+@app_commands.checks.cooldown(1, 3)
+async def affirmation(ctx: discord.Interaction):
+    async with aiohttp.ClientSession() as s:
+        async with s.get("https://affirmations.dev") as resp:
+            json = await resp.json()
+            aff = json["affirmation"]
+    e = discord.Embed(title="Affirmation", description=aff)
     await ctx.response.send_message(embed=e)
 
 async def on_tree_error(ctx, error):
