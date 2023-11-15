@@ -364,12 +364,24 @@ async def dice(ctx: discord.Interaction):
 @tree.command(name="affirmation", description="Get a random affirmation.")
 @app_commands.checks.cooldown(1, 3)
 async def affirmation(ctx: discord.Interaction):
+    await ctx.response.defer(thinking=True)
     async with aiohttp.ClientSession() as s:
         async with s.get("https://affirmations.dev") as resp:
             json = await resp.json()
             aff = json["affirmation"]
     e = discord.Embed(title="Affirmation", description=aff)
-    await ctx.response.send_message(embed=e)
+    await ctx.followup.send(embed=e)
+
+@tree.command(name="roast", description="Roast someone!")
+async def roast(ctx: discord.Interaction, user: discord.Member):
+    await ctx.response.defer(thinking=True)
+    async with aiohttp.ClientSession() as s:
+        async with s.get("https://evilinsult.com/generate_insult.php?lang=en&type=json") as resp:
+            json = await resp.json()
+            roast = json["insult"]
+
+    e = discord.Embed(title="Roast", description=roast)
+    await ctx.followup.send(user.mention, embed=e)
 
 async def on_tree_error(ctx, error):
     if isinstance(error, app_commands.CommandOnCooldown):
