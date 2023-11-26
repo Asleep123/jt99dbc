@@ -69,7 +69,7 @@ async def on_ready():
     mc = 0
     for g in gs:
         mc = mc + len(g.members)
-    print(f"{Color.GREEN}[SUCCESS]{Color.CYAN} Logged in as {Color.BOLD}{bot.user.name}{Color.RESET}{Color.CYAN} at ID {Color.BOLD}{bot.user.id}{Color.RESET}{Color.CYAN}.\nIn {Color.BOLD}{gc}{Color.RESET}{Color.CYAN} guilds\nwith {Color.BOLD}{mc}{Color.RESET}{Color.CYAN} total members.\nShard count is {Color.BOLD}{bot.shard_count}{Color.RESET}{Color.CYAN}.\nInvite: https://discord.com/api/oauth2/authorize?client_id={bot.user.id}&permissions=8&scope=bot%20applications.commands{Color.RESET}")
+    print(f"{Color.GREEN}[SUCCESS]{Color.CYAN} Logged in as {Color.BOLD}{bot.user.name}{Color.RESET}{Color.CYAN} at ID {Color.BOLD}{bot.user.id}{Color.RESET}{Color.CYAN}.\nIn {Color.BOLD}{gc}{Color.RESET}{Color.CYAN} guilds\nwith {Color.BOLD}{mc}{Color.RESET}{Color.CYAN} total members.\nShard count is {Color.BOLD}{bot.shard_count}{Color.RESET}{Color.CYAN}.\nInvite: https://discord.com/api/oauth2/authorize?client_id={bot.user.id}&permissions=18432&scope=bot%20applications.commands{Color.RESET}")
     # bot is likely to get disconnected from gateway if it tries to make calls the second its connected
     uptime_ping.start()
     await asyncio.sleep(2)
@@ -170,11 +170,21 @@ async def about(ctx: discord.Interaction):
     "Tells you about Infinity and it's functions."
     # self explanatory, tells you about the bot
     desc = """
-    Infinity is a Discord bot mean't to help you with general activities and make your server a blast! We have commands ranging from games, to reminders, and a lot of other stuff in between! Want to invite me? Run `/invite` to get my invite link. You can also check out some of our commands by running `/help`!
+    Infinity is a Discord bot meant to help you with general activities and make your server a blast! We have commands ranging from games, to reminders, and a lot of other stuff in between! Want to invite me? Run `/invite` to get my invite link. You can also check out some of our commands by running `/help`!
     Fun Fact: This was made for the JT-99 Discord Bot Competition.
     Have fun!
     """
     e = discord.Embed(title="About Infinity", description=desc)
+    e.set_author(name=bot.user.name, icon_url=bot.user.avatar)
+    await ctx.response.send_message(embed=e)
+
+@tree.command(name="invite", description="Get a link to invite the bot")
+async def about(ctx: discord.Interaction):
+    "Get a link to invite the bot"
+    desc = """
+    https://discord.com/api/oauth2/authorize?client_id={bot.user.id}&permissions=18432&scope=bot%20applications.commands
+    """
+    e = discord.Embed(title="Invite Infinity", description=desc)
     e.set_author(name=bot.user.name, icon_url=bot.user.avatar)
     await ctx.response.send_message(embed=e)
 
